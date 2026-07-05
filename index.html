@@ -302,27 +302,62 @@
   });
 
   saveBtn.addEventListener('click', () => {
-    // Generate a file blob out of the canvas drawing data
+    // 1. Fallback anchor-download method (Handles Desktop browsers seamlessly)
     canvas.toBlob((blob) => {
       if (!blob) return;
-
-      // Create a native object URL from the blob which iOS Safari permits for downloads
-      const blobUrl = URL.createObjectURL(blob);
       
+      const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
       a.download = 'photo-' + Date.now() + '.png';
       
-      // Append element briefly to the DOM (essential framework requirement for iOS)
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       
-      // Clear out the system memory hook
       setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
-      
-      previewOverlay.classList.remove('show');
     }, 'image/png');
+
+    // 2. Comprehensive solution for Mobile Chrome, Safari, and Google Apps
+    // Opens a clean window with the picture where iOS users can hold and save straight to Photos
+    setTimeout(() => {
+      const newWindow = window.open();
+      if (newWindow) {
+        newWindow.document.write(`
+          <html lang="en">
+          <head>
+            <title>Save Photo</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+              body { 
+                margin: 0; 
+                background: #111; 
+                display: flex; 
+                flex-direction: column;
+                align-items: center; 
+                justify-content: center; 
+                height: 100vh; 
+                font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+                color: #fff;
+                text-align: center;
+              }
+              img { max-width: 90vw; max-height: 70vh; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+              p { margin-top: 20px; font-size: 16px; opacity: 0.9; padding: 0 20px; line-height: 1.4; }
+            </style>
+          </head>
+          <body>
+            <img src="${previewImg.src}" alt="Your Photo" />
+            <p><strong>To Save to Camera Roll:</strong><br>Press and hold the image, then choose <strong>"Save to Photos"</strong></p>
+          </body>
+          </html>
+        `);
+        newWindow.document.close();
+      } else {
+        // Fallback UI message if a strong mobile pop-up blocker prevents window.open
+        alert("To save directly to your Camera Roll: Press and hold down on the photo preview image behind this window, then select 'Save to Photos'!");
+      }
+      previewOverlay.classList.remove('show');
+    }, 150);
   });
 </script>
 </body>
