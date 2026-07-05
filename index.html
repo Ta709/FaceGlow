@@ -302,11 +302,27 @@
   });
 
   saveBtn.addEventListener('click', () => {
-    const a = document.createElement('a');
-    a.href = previewImg.src;
-    a.download = 'photo-' + Date.now() + '.png';
-    a.click();
-    previewOverlay.classList.remove('show');
+    // Generate a file blob out of the canvas drawing data
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+
+      // Create a native object URL from the blob which iOS Safari permits for downloads
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = 'photo-' + Date.now() + '.png';
+      
+      // Append element briefly to the DOM (essential framework requirement for iOS)
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      // Clear out the system memory hook
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+      
+      previewOverlay.classList.remove('show');
+    }, 'image/png');
   });
 </script>
 </body>
